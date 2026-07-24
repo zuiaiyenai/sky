@@ -16,10 +16,14 @@ import com.github.pagehelper.PageHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -53,6 +57,10 @@ public class DishServiceImpl implements DishService {
 //修改菜品
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "dish:list", allEntries = true),
+            @CacheEvict(cacheNames = "setmeal:dish", allEntries = true)
+    })
     public void update(DishDTO dishDTO) {
         if (dishDTO.getId() == null) {
             throw new BaseException("菜品id不能为空");
@@ -75,6 +83,10 @@ public class DishServiceImpl implements DishService {
     //批量删除菜品
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "dish:list", allEntries = true),
+            @CacheEvict(cacheNames = "setmeal:dish", allEntries = true)
+    })
     public void batchDelete(List<Long> ids) {
         if (ids == null || ids.isEmpty()) {
             throw new BaseException("请选择要删除的菜品");
@@ -96,6 +108,10 @@ public class DishServiceImpl implements DishService {
     //新增菜品
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "dish:list", allEntries = true),
+            @CacheEvict(cacheNames = "setmeal:dish", allEntries = true)
+    })
     public Long add(DishDTO dishDTO) {
         if (dishDTO.getName() == null || dishDTO.getName().trim().isEmpty()) {
             throw new BaseException("菜品名称不能为空");
@@ -134,6 +150,10 @@ public class DishServiceImpl implements DishService {
     }
     //起售、停售
     @Override
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "dish:list", allEntries = true),
+            @CacheEvict(cacheNames = "setmeal:dish", allEntries = true)
+    })
     public void startStop(Integer status, Long id) {
         if (status == null || status != 0 && status != 1) {
             throw new BaseException("菜品状态参数不正确");
@@ -151,5 +171,29 @@ public class DishServiceImpl implements DishService {
         dish.setUpdateTime(LocalDateTime.now());
         dish.setUpdateUser(BaseContext.getCurrentId());
         dishMapper.update(dish);
+    }
+
+    @Cacheable(
+            cacheNames = "dish:list",
+            key = "#dish.categoryId + ':' + #dish.status",
+            unless = "#result == null"
+    )
+    /**
+     * 顾客查询菜品及其口味
+     */
+    @Override
+    public List<DishVO> listWithFlavor(Dish dish) {
+        List<Dish> dishList = dishMapper.list(dish);
+        List<DishVO> dishVOList = new ArrayList<>();
+
+        for (Dish item : dishList) {
+            DishVO dishVO = new DishVO();
+            BeanUtils.copyProperties(item, dishVO);
+            List<DishFlavor> flavors = dishFlavorMapper.getByDishId(item.getId());
+            dishVO.setFlavors(flavors);
+            dishVOList.add(dishVO);
+        }
+
+        return dishVOList;
     }
 }

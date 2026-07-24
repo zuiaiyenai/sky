@@ -15,10 +15,14 @@ import com.sky.mapper.SetmealDishMapper;
 import com.sky.mapper.SetmealMapper;
 import com.sky.result.PageResult;
 import com.sky.service.SetmealService;
+import com.sky.vo.DishItemVO;
 import com.sky.vo.SetmealVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -53,6 +57,10 @@ public class SetmealServiceImpl implements SetmealService {
     //修改套餐
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "setmeal:list", allEntries = true),
+            @CacheEvict(cacheNames = "setmeal:dish", allEntries = true)
+    })
     public void update(SetmealDTO setmealDTO) {
         if (setmealDTO.getId() == null) {
             throw new BaseException("套餐id不能为空");
@@ -72,6 +80,10 @@ public class SetmealServiceImpl implements SetmealService {
 
     //套餐起售，停售
     @Override
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "setmeal:list", allEntries = true),
+            @CacheEvict(cacheNames = "setmeal:dish", allEntries = true)
+    })
     public void startStop(Integer status, Long id) {
         if (status == null || (status != 0 && status != 1)) {
             throw new BaseException("套餐状态参数不正确");
@@ -105,6 +117,10 @@ public class SetmealServiceImpl implements SetmealService {
     //删除套餐
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "setmeal:list", allEntries = true),
+            @CacheEvict(cacheNames = "setmeal:dish", allEntries = true)
+    })
     public void batchDelete(List<Long> ids) {
         if (ids == null || ids.isEmpty()) {
             throw new BaseException("请选择要删除的套餐");
@@ -125,6 +141,10 @@ public class SetmealServiceImpl implements SetmealService {
     //新增套餐
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "setmeal:list", allEntries = true),
+            @CacheEvict(cacheNames = "setmeal:dish", allEntries = true)
+    })
     public Long add(SetmealDTO setmealDTO) {
         if (setmealDTO.getName() == null || setmealDTO.getName().trim().isEmpty()) {
             throw new BaseException("套餐名称不能为空");
@@ -175,5 +195,30 @@ public class SetmealServiceImpl implements SetmealService {
         List<SetmealDish> setmealDishes = setmealDishMapper.getBySetmealId(id);
         setmealVO.setSetmealDishes(setmealDishes);
         return setmealVO;
+    }
+
+    /**
+     * 顾客查询套餐
+     */
+    @Cacheable(
+            cacheNames = "setmeal:list",
+            key = "#setmeal.categoryId + ':' + #setmeal.status",
+            unless = "#result == null")
+   @Override
+    public List<Setmeal> list(Setmeal setmeal) {
+        return setmealMapper.list(setmeal);
+    }
+
+    /**
+     * 顾客根据套餐 id 查询菜品选项
+     */
+    @Cacheable(
+            cacheNames = "setmeal:dish",
+            key = "#id",
+            unless = "#result == null"
+    )
+   @Override
+    public List<DishItemVO> getDishItemById(Long id) {
+        return setmealMapper.getDishItemBySetmealId(id);
     }
 }
