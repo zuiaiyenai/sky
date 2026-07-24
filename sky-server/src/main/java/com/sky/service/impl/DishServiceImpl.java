@@ -90,8 +90,8 @@ public class DishServiceImpl implements DishService {
             }
         }
 
-        dishMapper.deleteByIds(ids);
         dishFlavorMapper.deleteByDishIds(ids);
+        dishMapper.deleteByIds(ids);
     }
     //新增菜品
     @Override
