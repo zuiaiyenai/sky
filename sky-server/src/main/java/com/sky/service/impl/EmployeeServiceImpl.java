@@ -30,7 +30,7 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Autowired
     private EmployeeMapper employeeMapper;
-
+//登录
     @Override
     public Employee login(EmployeeLoginDTO employeeLoginDTO) {
         String username = employeeLoginDTO.getUsername();
@@ -109,6 +109,7 @@ public void editPassword(PasswordEditDTO passwordEditDTO) {
         return employee;
     }
     //修改员工信息
+
     @Override
     public void update(Employee employee) {
         employee.setUpdateTime(LocalDateTime.now());
