@@ -11,12 +11,17 @@ import com.sky.mapper.UserMapper;
 import com.sky.properties.WeChatProperties;
 import com.sky.service.UserService;
 import com.sky.utils.HttpClientUtil;
+import com.sky.vo.UserReportVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -77,5 +82,35 @@ public class UserServiceImpl implements UserService {
                 JSON.parseObject(json);
 
         return jsonObject.getString("openid");
+    }
+    @Override
+    public UserReportVO getUserStatistics(LocalDate begin, LocalDate end) {
+        List<String> dateList = new ArrayList<>();
+        List<String> newUserList = new ArrayList<>();
+        List<String> totalUserList = new ArrayList<>();
+
+        LocalDate current = begin;
+        while (!current.isAfter(end)) {
+            dateList.add(current.toString());
+
+            Map<String, Object> map = new HashMap<>();
+            map.put("begin", current.atTime(LocalTime.MIN));
+            map.put("end", current.atTime(LocalTime.MAX));
+            Integer newUsers = userMapper.countByMap(map);
+            newUserList.add(newUsers.toString());
+
+            Map<String, Object> totalMap = new HashMap<>();
+            totalMap.put("end", current.atTime(LocalTime.MAX));
+            Integer totalUsers = userMapper.countByMap(totalMap);
+            totalUserList.add(totalUsers.toString());
+
+            current = current.plusDays(1);
+        }
+
+        return UserReportVO.builder()
+                .dateList(String.join(",", dateList))
+                .newUserList(String.join(",", newUserList))
+                .totalUserList(String.join(",", totalUserList))
+                .build();
     }
 }

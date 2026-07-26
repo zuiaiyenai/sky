@@ -5,6 +5,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
+import java.util.Map;
 
 @Mapper
 public interface SetmealDishMapper {
@@ -16,4 +17,5 @@ public interface SetmealDishMapper {
     List<SetmealDish> getBySetmealId(Long setmealId);
 //批量删除
     void deleteBySetmealIds(@Param("setmealIds") List<Long> ids);
+    Integer countByMap(Map map);
 }
