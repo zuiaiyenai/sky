@@ -1,4 +1,4 @@
-package com.sky.controller.uesr;
+package com.sky.controller.user;
 
 import com.sky.constant.StatusConstant;
 import com.sky.entity.Dish;
